@@ -1,0 +1,15 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.generator": "Ninja",
+  "cmake.configureOnOpen": true,
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json",
+  "C_Cpp.default.cStandard": "c17",
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.associations": {
+    "*.h": "c",
+    "*.c": "c"
+  },
+  "editor.formatOnSave": false,
+  "cmake.buildBeforeRun": true
+}

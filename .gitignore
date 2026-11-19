@@ -1,0 +1,38 @@
+# 构建产物与临时文件
+build/
+build-*/
+cmake-build-*/
+Debug/
+Release/
+*.o
+*.d
+*.su
+*.elf
+*.bin
+*.hex
+*.map
+*.axf
+*.lst
+
+# 禁止项：Keil / IAR 工程文件（任务书 2.4）
+*.uvprojx
+*.uvoptx
+*.uvguix.*
+*.ewp
+*.eww
+*.ewd
+
+# 编译数据库（由 CMAKE_EXPORT_COMPILE_COMMANDS 生成）
+compile_commands.json
+.cache/
+
+# 编辑器 / 系统
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+Thumbs.db
+desktop.ini
+.DS_Store
