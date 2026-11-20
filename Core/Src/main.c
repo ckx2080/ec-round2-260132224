@@ -26,7 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include "bsp_pwm_measure.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,9 +37,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-static volatile uint32_t s_rise = 0;
-static volatile uint16_t s_width_half_us = 0;   /* 单位 0.5µs */
-static volatile uint8_t  s_edge = 0;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -98,8 +97,8 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
- 
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 3000);   /* 1.5ms，先给安全位置 */
+    /* 先写安全脉宽再启动 PWM：避免上电瞬间输出 0µs 把舵机顶到极限 */
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 3000);   /* 1.5ms */
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 3000);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 3000);
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 3000);
@@ -109,8 +108,9 @@ int main(void)
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 
-    HAL_TIM_IC_Start_IT(&htim3, TIM_CHANNEL_1);
-
+#if PWM_MEASURE_ENABLE
+    BSP_PwmMeasure_Init();      /* 需要 PA0 与 PA6 短接 */
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -120,17 +120,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-     static uint32_t t = 0, k = 0;
-        if (HAL_GetTick() - t >= 500U) {
-            t = HAL_GetTick();
-            printf("w=%u.%u us\r\n", s_width_half_us / 2, (s_width_half_us % 2) * 5);
-            /* 每 1.5s 换一个测试点：1000 → 3000 → 5000 */
-            if (++k % 3U == 0U) {
-                static const uint16_t pts[3] = {1000, 3000, 5000};
-                static uint8_t i = 0;
-                __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pts[i++ % 3]);
-            }
-        }
+#if PWM_MEASURE_ENABLE
+    BSP_PwmMeasure_Poll();      /* 1Hz 打印一次实测脉宽 */
+#endif
   }
   /* USER CODE END 3 */
 }
@@ -182,29 +174,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance != TIM3) return;
-
-    uint32_t v = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
-
-    if (s_edge == 0U) {                      /* 上升沿：记起点，改抓下降沿 */
-        s_rise = v;
-        s_edge = 1U;
-        __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1,
-                                      TIM_INPUTCHANNELPOLARITY_FALLING);
-    } else {                                 /* 下降沿：算高电平宽度 */
-        s_width_half_us = (uint16_t)((v >= s_rise) ? (v - s_rise)
-                                                   : (0x10000U + v - s_rise));
-        s_edge = 0U;
-        __HAL_TIM_SET_CAPTUREPOLARITY(htim, TIM_CHANNEL_1,
-                                      TIM_INPUTCHANNELPOLARITY_RISING);
-    }
-}
-
-
 
 int _write(int fd, char *ptr, int len)
 {
