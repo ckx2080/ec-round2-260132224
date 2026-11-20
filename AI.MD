@@ -17,6 +17,7 @@
 | 11-19 | `README.md`、`AI.MD`、`COST.md`、`docs/设计说明.md`、`docs/安全检查表.md`、`.gitignore`、`.gitattributes` | 生成仓库骨架与文档模板 | 采用（按实物改写） | 对照任务书 5.1 / 5.3 / 附件三逐条核对栏目是否齐全 | `7b2bf51` |
 | 11-20 | `Core/Src/main.c`（`USER CODE` 区） | 生成 TIM3 输入捕获回调、`_write` 重定向、四路 PWM 启动与安全初值 | 采用（改端口与阈值） | 串口打印 CCR 1000/3000/5000 对应 500/1500/2500µs，偏差 ≤2µs；拔掉 PA0–PA6 跳线后读数归零，接回恢复 | `e73307f` |
 | 11-20 | `.vscode/tasks.json`、`.vscode/launch.json` | 任务改为绝对路径调用 cmake、任务内重定向 TMP/TEMP、调试器改 CMSIS-DAP | 采用 | `Ctrl+Shift+B` 构建通过；OpenOCD 输出 `Programming Finished` + `Verified OK` | `945589b` |
+| 11-20 | `bsp/bsp_pwm_measure.c/.h`、`Core/Src/main.c`、`CMakeLists.txt` | 把捕获回调抽成独立 bsp 模块、main 精简为三处调用、注册源文件与 include | 采用（宏默认 1，交付前可置 0） | 宏=1 构建通过且 `arm-none-eabi-nm` 可见 `T BSP_PwmMeasure_Init/Poll`；宏=0 时符号消失、Flash 由 43276B 降到 37576B | `3e32dde` |
 | 11-20 | CubeMX 配置（TIM2 50Hz / TIM3 捕获 / I2C 400kHz / USB CDC） | 仅提供配置步骤与参数建议，未生成代码 | 采用（由本人在 CubeMX 内操作） | 逐项核对 `tim.c`（PSC=35, ARR=39999）、`i2c.c`（400000）、`usbd_desc.c`（VID 0x483 / PID 0x5740） | `700446a`、`6668588` |
 
 > 验证方式要求可复现：写清“用什么测、测出什么数、判据是多少”，不要只写“测试通过”。
