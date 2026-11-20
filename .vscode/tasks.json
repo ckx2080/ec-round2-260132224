@@ -1,33 +1,63 @@
 {
   "version": "2.0.0",
+  "options": {
+    "env": {
+      "TMP": "${workspaceFolder}/../downloads/toolchain/tmp",
+      "TEMP": "${workspaceFolder}/../downloads/toolchain/tmp"
+    }
+  },
   "tasks": [
     {
       "label": "cmake: configure (Debug)",
       "type": "shell",
-      "command": "cmake",
+      "command": "${workspaceFolder}/../downloads/toolchain/cmake/bin/cmake.exe",
       "args": ["--preset", "Debug"],
+      "options": {
+        "env": {
+          "TMP": "${workspaceFolder}/../downloads/toolchain/tmp",
+          "TEMP": "${workspaceFolder}/../downloads/toolchain/tmp"
+        }
+      },
       "problemMatcher": []
     },
     {
       "label": "cmake: build (Debug)",
       "type": "shell",
-      "command": "cmake",
+      "command": "${workspaceFolder}/../downloads/toolchain/cmake/bin/cmake.exe",
       "args": ["--build", "--preset", "Debug"],
       "group": { "kind": "build", "isDefault": true },
+      "options": {
+        "env": {
+          "TMP": "${workspaceFolder}/../downloads/toolchain/tmp",
+          "TEMP": "${workspaceFolder}/../downloads/toolchain/tmp"
+        }
+      },
       "problemMatcher": ["$gcc"]
     },
     {
       "label": "cmake: build (Release)",
       "type": "shell",
-      "command": "cmake",
+      "command": "${workspaceFolder}/../downloads/toolchain/cmake/bin/cmake.exe",
       "args": ["--build", "--preset", "Release"],
+      "options": {
+        "env": {
+          "TMP": "${workspaceFolder}/../downloads/toolchain/tmp",
+          "TEMP": "${workspaceFolder}/../downloads/toolchain/tmp"
+        }
+      },
       "problemMatcher": ["$gcc"]
     },
     {
       "label": "clean rebuild",
       "type": "shell",
-      "command": "cmake",
+      "command": "${workspaceFolder}/../downloads/toolchain/cmake/bin/cmake.exe",
       "args": ["--build", "--preset", "Debug", "--clean-first"],
+      "options": {
+        "env": {
+          "TMP": "${workspaceFolder}/../downloads/toolchain/tmp",
+          "TEMP": "${workspaceFolder}/../downloads/toolchain/tmp"
+        }
+      },
       "problemMatcher": ["$gcc"]
     }
   ]

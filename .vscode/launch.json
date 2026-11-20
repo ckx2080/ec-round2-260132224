@@ -2,16 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "OpenOCD: ST-Link (F103)",
+      "name": "OpenOCD: CMSIS-DAP (F103)",
       "type": "cortex-debug",
       "request": "launch",
       "servertype": "openocd",
       "cwd": "${workspaceFolder}",
-      "executable": "${workspaceFolder}/build/Debug/ec-round2.elf",
+      "executable": "${workspaceFolder}/build/Debug/ec-round2-260132224.elf",
       "device": "STM32F103C8",
       "configFiles": [
-        "interface/stlink.cfg",
+        "interface/cmsis-dap.cfg",
         "target/stm32f1x.cfg"
+      ],
+      "openOCDLaunchCommands": [
+        "adapter speed 1000"
       ],
       "serverpath": "C:/Users/2080/Documents/deepseek-harness/default-workspace/downloads/toolchain/openocd/bin/openocd.exe",
       "searchDir": [
