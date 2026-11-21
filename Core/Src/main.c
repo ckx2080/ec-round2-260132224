@@ -27,7 +27,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "bsp_pwm.h"
 #include "bsp_pwm_measure.h"
+#include "bsp_time.h"
+#include "bsp_pwm.c"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +51,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+static uint32_t s_tick5;        /* 5ms 节拍计数（用于验证时基） */
+static uint32_t s_last_sec;     /* 上次打印的秒数 */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,17 +100,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-    /* 先写安全脉宽再启动 PWM：避免上电瞬间输出 0µs 把舵机顶到极限 */
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 3000);   /* 1.5ms */
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 3000);
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 3000);
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 3000);
-
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
+     BSP_Time_Init();
+     BSP_Pwm_Init();
 
 #if PWM_MEASURE_ENABLE
     BSP_PwmMeasure_Init();      /* 需要 PA0 与 PA6 短接 */
@@ -120,6 +117,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    if (BSP_Time_Take5ms()) {
+        s_tick5++;              /* 每 5ms 加一，1 秒应到 200 */
+    }
+
+    if ((BSP_Time_Ms() - s_last_sec) >= 1000U) {   /* 1Hz 自检打印 */
+        s_last_sec = BSP_Time_Ms();
+        printf("ms=%lu tick5=%lu\r\n",
+               (unsigned long)s_last_sec, (unsigned long)s_tick5);
+        s_tick5 = 0U;
+    }
+
 #if PWM_MEASURE_ENABLE
     BSP_PwmMeasure_Poll();      /* 1Hz 打印一次实测脉宽 */
 #endif
