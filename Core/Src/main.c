@@ -30,7 +30,6 @@
 #include "bsp_pwm.h"
 #include "bsp_pwm_measure.h"
 #include "bsp_time.h"
-#include "bsp_pwm.c"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
