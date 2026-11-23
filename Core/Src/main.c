@@ -40,6 +40,14 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+/* 1 = 标定模式：串口控制台可逐关节微调脉宽，配合捕获读数核对
+   0 = 正常运行：控制台整段不编译                                         */
+#define CALIB_MODE      1
+
+/* 控制台步进（µs） */
+#define CALIB_STEP_FINE   10
+#define CALIB_STEP_COARSE 50
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,6 +60,10 @@
 /* USER CODE BEGIN PV */
 static uint32_t s_tick5;        /* 5ms 节拍计数（用于验证时基） */
 static uint32_t s_last_sec;     /* 上次打印的秒数 */
+
+#if CALIB_MODE
+static pwm_joint_t s_calib_joint = PWM_J_BASE;   /* 当前在调哪一路 */
+#endif
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,7 +74,117 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#if CALIB_MODE
+/* 串口控制台：单字符命令，逐关节微调脉宽，用来标定行程
+ *   1~4  选关节（1=底座 2=肩 3=肘 4=爪）
+ *   + -  当前关节 ±10µs
+ *   ] [  当前关节 ±50µs（快速扫）
+ *   c    当前关节回中 1500µs
+ *   a    四路全部回中 1500µs
+ *   p    打印当前关节与脉宽
+ *   h    打印本帮助
+ * 注意：必须在 BSP_Pwm_Init() 之后调用（PWM 已启动）
+ */
+static void Calib_Console(void)
+{
+    static uint8_t ch;
+    uint16_t us;
 
+    if (HAL_UART_Receive(&huart1, &ch, 1U, 0U) != HAL_OK) {
+        return;
+    }
+
+    us = BSP_Pwm_GetPulseUs(s_calib_joint);
+
+    switch (ch) {
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+        s_calib_joint = (pwm_joint_t)(ch - '1');
+        printf("[J%u] selected, us=%u\r\n",
+               (unsigned)(s_calib_joint + 1U),
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case '+':
+    case '=':
+        BSP_Pwm_SetPulseUs(s_calib_joint, (uint16_t)(us + CALIB_STEP_FINE));
+        printf("[J%u] %u -> %u\r\n", (unsigned)(s_calib_joint + 1U), us,
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case '-':
+    case '_':
+        BSP_Pwm_SetPulseUs(s_calib_joint, (uint16_t)(us - CALIB_STEP_FINE));
+        printf("[J%u] %u -> %u\r\n", (unsigned)(s_calib_joint + 1U), us,
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case ']':
+        BSP_Pwm_SetPulseUs(s_calib_joint, (uint16_t)(us + CALIB_STEP_COARSE));
+        printf("[J%u] %u -> %u\r\n", (unsigned)(s_calib_joint + 1U), us,
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case '[':
+        BSP_Pwm_SetPulseUs(s_calib_joint, (uint16_t)(us - CALIB_STEP_COARSE));
+        printf("[J%u] %u -> %u\r\n", (unsigned)(s_calib_joint + 1U), us,
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case 'c':
+        BSP_Pwm_SetPulseUs(s_calib_joint, 1500U);
+        printf("[J%u] center 1500\r\n", (unsigned)(s_calib_joint + 1U));
+        break;
+
+    case 'a':
+        for (uint8_t i = 0; i < PWM_J_NUM; i++) {
+            BSP_Pwm_SetPulseUs((pwm_joint_t)i, 1500U);
+        }
+        printf("all center 1500\r\n");
+        break;
+
+    case 'p':
+        printf("[J%u] us=%u\r\n", (unsigned)(s_calib_joint + 1U),
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    /* 走完整映射链路，用来验证"角度→脉宽"与软限位 */
+    case 'z':   /* q = 0    -> 应为 pulse_min */
+        BSP_Pwm_SetAngle10(s_calib_joint, 0);
+        printf("[J%u] q=0    -> us=%u\r\n", (unsigned)(s_calib_joint + 1U),
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case 'm':   /* q = 900  -> 应为中值 */
+        BSP_Pwm_SetAngle10(s_calib_joint, 900);
+        printf("[J%u] q=900  -> us=%u\r\n", (unsigned)(s_calib_joint + 1U),
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case 'x':   /* q = 1800 -> 应为 pulse_max */
+        BSP_Pwm_SetAngle10(s_calib_joint, 1800);
+        printf("[J%u] q=1800 -> us=%u\r\n", (unsigned)(s_calib_joint + 1U),
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case 'o':   /* q = 2500 -> 超限，应被钳到 pulse_max */
+        BSP_Pwm_SetAngle10(s_calib_joint, 2500);
+        printf("[J%u] q=2500 -> us=%u (clamped)\r\n", (unsigned)(s_calib_joint + 1U),
+               BSP_Pwm_GetPulseUs(s_calib_joint));
+        break;
+
+    case 'h':
+        printf("1-4 joint | +/- 10us | ]/[ 50us | c center | a all\r\n");
+        printf("p print  | z q=0 | m q=900 | x q=1800 | o q=2500(clamp)\r\n");
+        break;
+
+    default:
+        break;   /* 回车/换行等忽略 */
+    }
+}
+#endif /* CALIB_MODE */
 /* USER CODE END 0 */
 
 /**
@@ -129,6 +251,10 @@ int main(void)
 
 #if PWM_MEASURE_ENABLE
     BSP_PwmMeasure_Poll();      /* 1Hz 打印一次实测脉宽 */
+#endif
+
+#if CALIB_MODE
+    Calib_Console();            /* 标定控制台：串口单字符命令 */
 #endif
   }
   /* USER CODE END 3 */

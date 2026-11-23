@@ -109,7 +109,7 @@ uint8_t ArmMotion_Step(ArmMotion *m, uint32_t dt_ms)
         int32_t q = (int32_t)m->q_start[i] + (int32_t)((float)d * s + 0.5f * ((d >= 0) ? 1.0f : -1.0f));
         m->q_cmd[i] = (int16_t)q;
         BSP_Pwm_SetAngle10((pwm_joint_t)i, m->q_cmd[i]);
-    }
+    } 
 
     return done;
 }

@@ -47,12 +47,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     bsp/bsp_pwm_measure.c
     bsp/bsp_time.c
     bsp/bsp_pwm.c
+    application/arm_motion.c
     # Add user sources here
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     bsp
+    application
     # Add user defined include paths
 )
 
@@ -67,6 +69,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    m
 
     # Add user defined libraries
 )
