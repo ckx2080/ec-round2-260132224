@@ -19,6 +19,7 @@
 | 11-20 | `.vscode/tasks.json`、`.vscode/launch.json` | 任务改为绝对路径调用 cmake、任务内重定向 TMP/TEMP、调试器改 CMSIS-DAP | 采用 | `Ctrl+Shift+B` 构建通过；OpenOCD 输出 `Programming Finished` + `Verified OK` | `945589b` |
 | 11-20 | `bsp/bsp_pwm_measure.c/.h`、`Core/Src/main.c`、`CMakeLists.txt` | 把捕获回调抽成独立 bsp 模块、main 精简为三处调用、注册源文件与 include | 采用（宏默认 1，交付前可置 0） | 宏=1 构建通过且 `arm-none-eabi-nm` 可见 `T BSP_PwmMeasure_Init/Poll`；宏=0 时符号消失、Flash 由 43276B 降到 37576B | `3e32dde` |
 | 11-20 | CubeMX 配置（TIM2 50Hz / TIM3 捕获 / I2C 400kHz / USB CDC） | 仅提供配置步骤与参数建议，未生成代码 | 采用（由本人在 CubeMX 内操作） | 逐项核对 `tim.c`（PSC=35, ARR=39999）、`i2c.c`（400000）、`usbd_desc.c`（VID 0x483 / PID 0x5740） | `700446a`、`6668588` |
+| 11-23 | `bsp/bsp_pwm.c`、`Core/Src/main.c`、`CMakeLists.txt`、`application/arm_motion.h` | 新增 `pulse_safe` 每关节安全位与反算逻辑、串口标定控制台（CALIB_MODE）、注册 `arm_motion.c` 并链接 libm | 采用（标定数值为本人实测，AI 只改结构与命令分发） | 编译通过（FLASH 46452B）；上电四轴停在 1500/1980/2000/1495µs，不再顶机械极限；控制台 `o` 键超限时脉宽被钳到 `pulse_max` | `6fdc3c0` |
 
 > 验证方式要求可复现：写清“用什么测、测出什么数、判据是多少”，不要只写“测试通过”。
 
