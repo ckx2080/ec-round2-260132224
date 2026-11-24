@@ -28,6 +28,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "arm_home.h"
+#include "arm_imu.h"
 #include "arm_motion.h"
 #include "arm_state.h"
 #include "bsp_pwm.h"
@@ -227,9 +228,16 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-     BSP_Time_Init();
-     ArmState_Init();
-     BSP_Pwm_Init();
+    BSP_Time_Init();
+    ArmState_Init();
+    BSP_Pwm_Init();
+
+    /* 姿态传感器：初始化 + 静止零偏校准（约 0.7s，期间机械臂须静止） */
+    if (ArmImu_Init() == 0U) {
+        printf("[imu] init FAIL\r\n");
+    } else {
+        printf("[imu] init ok\r\n");
+    }
 
 #if PWM_MEASURE_ENABLE
     BSP_PwmMeasure_Init();      /* 需要 PA0 与 PA6 短接 */
@@ -249,6 +257,12 @@ int main(void)
         s_tick5++;              /* 每 5ms 加一，1 秒应到 200 */
 
         (void)ArmHome_Poll(&g_motion);   /* 回零推进，1.5s 后自动结束 */
+
+        ArmImu_Poll();                   /* 内部 20Hz 采样 + 故障判定 */
+
+        if (g_fault) {                   /* 故障态：立刻停在当前位置 */
+            ArmMotion_Abort(&g_motion);
+        }
     }
 
     if ((BSP_Time_Ms() - s_last_sec) >= 1000U) {   /* 1Hz 自检打印 */

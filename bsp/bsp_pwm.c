@@ -1,5 +1,6 @@
 /* bsp/bsp_pwm.c */
 #include "bsp_pwm.h"
+#include "arm_state.h"
 #include "tim.h"
 
 #define PULSE_MIN_US    500U
@@ -69,9 +70,9 @@ void BSP_Pwm_SetAngle10(pwm_joint_t j, int16_t q10)
 
     const pwm_cal_t *c = &s_cal[j];
 
-    /* 1. 软限位钳位 */
-    if (q10 < c->q_min) q10 = c->q_min;
-    if (q10 > c->q_max) q10 = c->q_max;
+    /* 1. 软限位钳位（发生钳位时置位，供状态帧与答辩留痕） */
+    if (q10 < c->q_min) { q10 = c->q_min; g_limit = 1; }
+    if (q10 > c->q_max) { q10 = c->q_max; g_limit = 1; }
 
     /* 2. 线性映射，全程 int32，避免 int16 溢出 */
     int32_t span = (int32_t)c->q_max - (int32_t)c->q_min;      /* >0 */

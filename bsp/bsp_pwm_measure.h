@@ -20,7 +20,7 @@
 
 /* 1 = 启用；0 = 完全编译掉（正式构建建议 0，答辩演示再改 1） */
 #ifndef PWM_MEASURE_ENABLE
-#define PWM_MEASURE_ENABLE  1
+#define PWM_MEASURE_ENABLE  0
 #endif
 
 /**

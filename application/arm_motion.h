@@ -53,4 +53,10 @@ uint8_t ArmMotion_Step(ArmMotion *m, uint32_t dt_ms);
  */
 uint8_t ArmMotion_IsRunning(const ArmMotion *m);
 
+/**
+ * @brief 立即中止当前运动，停在当前位置（故障态用）
+ * @note  起点与终点都设成当前角度，之后 Step 不再产生位移
+ */
+void ArmMotion_Abort(ArmMotion *m);
+
 #endif /* ARM_MOTION_H */

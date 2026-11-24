@@ -50,6 +50,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     application/arm_motion.c
     application/arm_state.c
     application/arm_home.c
+    application/arm_imu.c
+    components/devices/mpu6050.c
     # Add user sources here
 )
 
@@ -57,6 +59,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     bsp
     application
+    components/devices
     # Add user defined include paths
 )
 

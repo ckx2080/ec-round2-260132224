@@ -1,6 +1,7 @@
 /* application/arm_motion.c */
 #include <math.h>
 #include "arm_motion.h"
+#include "arm_state.h"
 
 /* 每轴限制：v 单位 0.1°/s，a 单位 0.1°/s²（按结构实测再改） */
 typedef struct {
@@ -69,6 +70,7 @@ void ArmMotion_Plan(ArmMotion *m, const int16_t q_tgt[PWM_J_NUM], uint32_t durat
     if (m->ta_ms > m->T_ms / 2U) m->ta_ms = m->T_ms / 2U;
     m->t_ms    = 0U;
     m->running = 1U;
+    g_moving=1;
 }
 
 static float s_of(uint32_t t, uint32_t T, uint32_t ta)
@@ -100,6 +102,7 @@ uint8_t ArmMotion_Step(ArmMotion *m, uint32_t dt_ms)
         s = 1.0f;
         done = 1U;
         m->running = 0U;
+        g_moving=0;
     } else {
         s = s_of(m->t_ms, m->T_ms, m->ta_ms);
     }
@@ -117,4 +120,23 @@ uint8_t ArmMotion_Step(ArmMotion *m, uint32_t dt_ms)
 uint8_t ArmMotion_IsRunning(const ArmMotion *m)
 {
     return m->running;
+}
+
+void ArmMotion_Abort(ArmMotion *m)
+{
+    if (m == 0) {
+        return;
+    }
+
+    m->running = 0U;
+    m->t_ms    = 0U;
+
+    for (uint8_t i = 0; i < PWM_J_NUM; i++) {
+        int16_t q = BSP_Pwm_GetAngle10((pwm_joint_t)i);
+        m->q_start[i] = q;
+        m->q_end[i]   = q;
+        m->q_cmd[i]   = q;
+    }
+
+    g_moving = 0;
 }
