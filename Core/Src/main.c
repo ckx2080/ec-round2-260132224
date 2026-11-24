@@ -27,6 +27,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "arm_home.h"
+#include "arm_motion.h"
+#include "arm_state.h"
 #include "bsp_pwm.h"
 #include "bsp_pwm_measure.h"
 #include "bsp_time.h"
@@ -58,8 +61,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static uint32_t s_tick5;        /* 5ms 节拍计数（用于验证时基） */
-static uint32_t s_last_sec;     /* 上次打印的秒数 */
+static uint32_t  s_tick5;       /* 5ms 节拍计数（用于验证时基） */
+static uint32_t  s_last_sec;    /* 上次打印的秒数 */
+static ArmMotion g_motion;      /* 回零与日常运动共用同一个轨迹对象 */
 
 #if CALIB_MODE
 static pwm_joint_t s_calib_joint = PWM_J_BASE;   /* 当前在调哪一路 */
@@ -224,11 +228,14 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
      BSP_Time_Init();
+     ArmState_Init();
      BSP_Pwm_Init();
 
 #if PWM_MEASURE_ENABLE
     BSP_PwmMeasure_Init();      /* 需要 PA0 与 PA6 短接 */
 #endif
+
+    ArmHome_Start(&g_motion, ARM_HOME_DURATION_MS);   /* 上电自动回零 */
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -240,12 +247,15 @@ int main(void)
     /* USER CODE BEGIN 3 */
     if (BSP_Time_Take5ms()) {
         s_tick5++;              /* 每 5ms 加一，1 秒应到 200 */
+
+        (void)ArmHome_Poll(&g_motion);   /* 回零推进，1.5s 后自动结束 */
     }
 
     if ((BSP_Time_Ms() - s_last_sec) >= 1000U) {   /* 1Hz 自检打印 */
         s_last_sec = BSP_Time_Ms();
-        printf("ms=%lu tick5=%lu\r\n",
-               (unsigned long)s_last_sec, (unsigned long)s_tick5);
+        printf("ms=%lu tick5=%lu st=0x%02X\r\n",
+               (unsigned long)s_last_sec, (unsigned long)s_tick5,
+               (unsigned)ArmState_Pack());
         s_tick5 = 0U;
     }
 

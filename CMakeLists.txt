@@ -48,6 +48,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     bsp/bsp_time.c
     bsp/bsp_pwm.c
     application/arm_motion.c
+    application/arm_state.c
+    application/arm_home.c
     # Add user sources here
 )
 
